@@ -36,8 +36,6 @@ RUN git checkout --quiet "$commit" && \
 
 FROM debian:buster-slim
 
-MAINTAINER Heroic Labs <support@heroiclabs.com>
-
 ARG version
 
 LABEL version=$version
