@@ -1,4 +1,4 @@
-![Nakama](.github/logo.png?raw=true "Nakama logo")
+11![Nakama](.github/logo.png?raw=true "Nakama logo")
 ======
 
 [![GitHub release](https://img.shields.io/github/release/heroiclabs/nakama.svg)](https://heroiclabs.com/docs/nakama-download/)
