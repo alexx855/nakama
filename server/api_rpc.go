@@ -35,7 +35,7 @@ import (
 var (
 	authTokenInvalidBytes    = []byte(`{"error":"Auth token invalid","message":"Auth token invalid","code":16}`)
 	httpKeyInvalidBytes      = []byte(`{"error":"HTTP key invalid","message":"HTTP key invalid","code":16}`)
-	noAuthBytes              = []byte(`{"error":"Auth token or HTTP key required","message":"Auth token or HTTP key required","code":16}`)
+	noAuthBytes              = []byte(`{"error":"1Auth token or HTTP key required","message":"Auth token or HTTP key required","code":16}`)
 	rpcIDMustBeSetBytes      = []byte(`{"error":"RPC ID must be set","message":"RPC ID must be set","code":3}`)
 	rpcFunctionNotFoundBytes = []byte(`{"error":"RPC function not found","message":"RPC function not found","code":5}`)
 	internalServerErrorBytes = []byte(`{"error":"Internal Server Error","message":"Internal Server Error","code":13}`)

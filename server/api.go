@@ -21,11 +21,12 @@ import (
 	"database/sql"
 	"encoding/base64"
 	"fmt"
-	"google.golang.org/protobuf/encoding/protojson"
 	"net"
 	"net/http"
 	"strings"
 	"time"
+
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/heroiclabs/nakama-common/api"
 
@@ -361,11 +362,11 @@ func securityInterceptorFunc(logger *zap.Logger, config Config, ctx context.Cont
 			in, ok := req.(*api.Rpc)
 			if !ok {
 				logger.Error("Cannot extract Rpc from incoming request")
-				return nil, status.Error(codes.FailedPrecondition, "Auth token or HTTP key required")
+				return nil, status.Error(codes.FailedPrecondition, "2Auth token or HTTP key required")
 			}
 			if in.HttpKey == "" {
 				// HTTP key not present.
-				return nil, status.Error(codes.Unauthenticated, "Auth token or HTTP key required")
+				return nil, status.Error(codes.Unauthenticated, "3Auth token or HTTP key required")
 			}
 			if in.HttpKey != config.GetRuntime().HTTPKey {
 				// Value of HTTP key username component did not match.
