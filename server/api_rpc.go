@@ -16,6 +16,7 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -27,8 +28,10 @@ import (
 	"github.com/gorilla/mux"
 	grpcgw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/heroiclabs/nakama-common/api"
+	"github.com/heroiclabs/nakama/v3/apigrpc"
 	"go.uber.org/zap"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -122,8 +125,36 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
-		userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), firebaseIDToken.UID)
+		// session, err := s.AuthenticateCustom(ctx, "48656C6C6F20776F726C64", "username", true)
+		// if err != nil {
+		// 	s.logger.Debug("Session error", zap.Error(err))
+		// }
+
+			outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+				"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
+			}))
+			conn, err := grpc.DialContext(outgoingCtx, "localhost:7349", grpc.WithInsecure())
+			if err != nil {
+				s.logger.Debug("Error writing response to client", zap.Error(err))
+				return
+			}
+
+			apiclient := apigrpc.NewNakamaClient(conn)
+			session, err := apiclient.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
+				Account: &api.AccountCustom{
+					Id: firebaseIDToken.UID,
+				},
+				// Username: GenerateString(),
+				Username: firebaseIDToken.UID,
+			})
+			if err != nil {
+					s.logger.Debug("Error writing response to client", zap.Error(err))
+					return
+			}
+
+		// userID, username, vars, err := AuthenticateCustom(context.Background(), logger, db, uuid.Must(uuid.NewV4()).String(), uuid.Must(uuid.NewV4()).String(), true)
+		// userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), session.Token)
+		userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.Token)
 		if !tokenAuth {
 			// Auth token not valid or expired.
 			w.Header().Set("content-type", "application/json")
