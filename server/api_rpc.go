@@ -58,8 +58,6 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 
 		opt := option.WithCredentialsFile("/nakama/data/modules/service-account.json")
 		app, err := firebase.NewApp(context.Background(), nil, opt)
-		// app, err := firebase.NewApp(context.Background(), nil)
-
 		if err != nil {
 			s.logger.Debug("error initializing app: %v\n", zap.Error(err))
 			return
@@ -124,17 +122,17 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.Token)
-		if !tokenAuth {
-			// Auth token not valid or expired.
-			w.Header().Set("content-type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			_, err := w.Write(authTokenInvalidBytes)
-			if err != nil {
-				s.logger.Debug("Error writing response to client", zap.Error(err))
-			}
-			return
-		}
+		// userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.Token)
+		// if !tokenAuth {
+		// 	// Auth token not valid or expired.
+		// 	w.Header().Set("content-type", "application/json")
+		// 	w.WriteHeader(http.StatusUnauthorized)
+		// 	_, err := w.Write(authTokenInvalidBytes)
+		// 	if err != nil {
+		// 		s.logger.Debug("Error writing response to client", zap.Error(err))
+		// 	}
+		// 	return
+		// }
 
 		// userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
 		// if !tokenAuth {
