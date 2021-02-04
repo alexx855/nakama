@@ -53,10 +53,10 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 	var username string
 	var vars map[string]string
 	var expiry int64
-	if auth := r.Header["Authorization"]; len(auth) >= 1 {
 
-		opt := option.WithCredentialsFile("/nakama/data/modules/service-account.json")
-		app, err := firebase.NewApp(context.Background(), nil, opt)
+	if auth := r.Header["Authorization"]; len(auth) >= 1 {
+		ctx, opt := context.Background(), option.WithCredentialsFile("/nakama/data/modules/service-account.json")
+		app, err := firebase.NewApp(ctx, nil, opt)
 		if err != nil {
 			s.logger.Debug("error initializing app: %v\n", zap.Error(err))
 			return
@@ -64,7 +64,6 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 
 		s.logger.Debug("Firebase admin ready")
 
-		ctx := context.Background()
 		client, err := app.Auth(ctx)
 		if err != nil {
 			s.logger.Error("error getting Auth client: %v\n", zap.Error(err))
@@ -96,6 +95,8 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 
 		s.logger.Debug("Verified ID token: %v\n")
 		s.logger.Debug(firebaseIDToken.UID)
+		// s.logger.Debug("session.Token", zap.Error(err))
+		// s.logger.Debug(session.Token, zap.Error(err))
 
 		// outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 		// 	"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
@@ -121,32 +122,18 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		s.logger.Debug("session.Token", zap.Error(err))
-		// s.logger.Debug(session.Token, zap.Error(err))
-
-		// userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.Token)
-		// if !tokenAuth {
-		// 	// Auth token not valid or expired.
-		// 	w.Header().Set("content-type", "application/json")
-		// 	w.WriteHeader(http.StatusUnauthorized)
-		// 	_, err := w.Write(authTokenInvalidBytes)
-		// 	if err != nil {
-		// 		s.logger.Debug("Error writing response to client", zap.Error(err))
-		// 	}
-		// 	return
-		// }
-
 		// userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
-		// if !tokenAuth {
-		// 	// Auth token not valid or expired.
-		// 	w.Header().Set("content-type", "application/json")
-		// 	w.WriteHeader(http.StatusUnauthorized)
-		// 	_, err := w.Write(authTokenInvalidBytes)
-		// 	if err != nil {
-		// 		s.logger.Debug("Error writing response to client", zap.Error(err))
-		// 	}
-		// 	return
-		// }
+		userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), firebaseIDToken.UID)
+		if !tokenAuth {
+			// Auth token not valid or expired.
+			w.Header().Set("content-type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, err := w.Write(authTokenInvalidBytes)
+			if err != nil {
+				s.logger.Debug("Error writing response to client", zap.Error(err))
+			}
+			return
+		}
 
 	} else if httpKey := queryParams.Get("http_key"); httpKey != "" {
 		if httpKey != s.config.GetRuntime().HTTPKey {
