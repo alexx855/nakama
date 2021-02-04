@@ -122,6 +122,9 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		s.logger.Debug("session.Token", zap.Error(err))
+		s.logger.Debug(session.Token, zap.Error(err))
+
 		// userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.Token)
 		// if !tokenAuth {
 		// 	// Auth token not valid or expired.
