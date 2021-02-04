@@ -31,7 +31,7 @@ RUN apt-get update && \
   git clone --quiet --no-checkout https://github.com/alexx855/nakama /go/build/nakama
 
 WORKDIR /go/build/nakama
-RUN git checkout --quiet "$commit" && \
+RUN git checkout --quiet && \
   go build -o /go/build-out/nakama -trimpath -mod=vendor -gcflags "-trimpath $PWD" -asmflags "-trimpath $PWD" -ldflags "-s -w -X main.version=$version -X main.commitID=$commit"
 
 FROM debian:buster-slim
