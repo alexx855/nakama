@@ -84,7 +84,7 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 		// app, err := firebase.NewApp(context.Background(), nil)
 
 		if err != nil {
-			s.logger.Debug("error initializing app: %v\n",  zap.Error(err))
+			s.logger.Debug("error initializing app: %v\n", zap.Error(err))
 			return
 		}
 
@@ -93,40 +93,42 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 		ctx := context.Background()
 		client, err := app.Auth(ctx)
 		if err != nil {
-			s.logger.Error("error getting Auth client: %v\n",  zap.Error(err))
+			s.logger.Error("error getting Auth client: %v\n", zap.Error(err))
 			return
 		}
 
 		const prefix = "Bearer "
-		var idToken = auth[len(prefix):]
-		// auth[0]
-		s.logger.Info(auth[0])
-		s.logger.Info(idToken[0])
-		firebaseIDToken, err := client.VerifyIDToken(ctx, idToken[0])
+		var idToken = auth[0]
+		if !strings.HasPrefix(idToken, prefix) {
+			s.logger.Error("error getting ID token: %v\n", zap.Error(err))
+			return
+		}
+		idToken = idToken[len(prefix):]
+
+		s.logger.Debug(idToken, zap.Error(err))
+		firebaseIDToken, err := client.VerifyIDToken(ctx, idToken)
 		if err != nil {
-			s.logger.Error("error verifying ID token: %v\n",  zap.Error(err))
+			s.logger.Error("error verifying ID token: %v\n", zap.Error(err))
 			return
 		}
 
-		s.logger.Info("Verified ID token: %v\n")
-		s.logger.Info(firebaseIDToken.UID)
+		s.logger.Debug("Verified ID token: %v\n")
+		s.logger.Debug(firebaseIDToken.UID)
 
 		// TODO: get from custom login
 		// AuthenticateCustom(firebaseIDToken)
 
-
-
-		// userID, username, vars, expiry, tokenAuth =  parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
-		// if !tokenAuth {
-		// 	// Auth token not valid or expired.
-		// 	w.Header().Set("content-type", "application/json")
-		// 	w.WriteHeader(http.StatusUnauthorized)
-		// 	_, err := w.Write(authTokenInvalidBytes)
-		// 	if err != nil {
-		// 		s.logger.Debug("Error writing response to client", zap.Error(err))
-		// 	}
-		// 	return
-		// }
+		userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
+		if !tokenAuth {
+			// Auth token not valid or expired.
+			w.Header().Set("content-type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, err := w.Write(authTokenInvalidBytes)
+			if err != nil {
+				s.logger.Debug("Error writing response to client", zap.Error(err))
+			}
+			return
+		}
 
 		// userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
 		// if !tokenAuth {
