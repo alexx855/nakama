@@ -124,7 +124,6 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 		s.logger.Debug("Verified ID token: %v\n")
 		s.logger.Debug(firebaseIDToken.UID)
 
-		ctx = context.Background()
 		outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 			"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
 		}))
@@ -150,16 +149,6 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// client := apigrpc.NewNakamaClient(conn)
-		// session, err := client.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
-		// 	Account: &api.AccountCustom{
-		// 		Id: customID,
-		// 	},
-		// 	// Username: GenerateString(),
-		// })
-		// if err != nil {
-		// 	return nil, nil, nil, nil
-		// }
 
 		// return conn, client, session, outgoingCtx
 
