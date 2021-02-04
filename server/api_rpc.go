@@ -16,7 +16,6 @@ package server
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -98,9 +97,9 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 		s.logger.Debug("Verified ID token: %v\n")
 		s.logger.Debug(firebaseIDToken.UID)
 
-		outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
-			"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
-		}))
+		// outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+		// 	"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
+		// }))
 
 		// session, err := s.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
 		// 	Account: &api.AccountCustom{
