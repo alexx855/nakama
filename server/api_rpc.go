@@ -102,12 +102,12 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 			"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
 		}))
 
-		session, err := s.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
-			Account: &api.AccountCustom{
-				Id: firebaseIDToken.UID,
-			},
-			Username: firebaseIDToken.UID,
-		})
+		// session, err := s.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
+		// 	Account: &api.AccountCustom{
+		// 		Id: firebaseIDToken.UID,
+		// 	},
+		// 	Username: firebaseIDToken.UID,
+		// })
 
 		if err != nil {
 			s.logger.Error("error verifying ID token: %v\n", zap.Error(err))
@@ -123,7 +123,7 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.logger.Debug("session.Token", zap.Error(err))
-		s.logger.Debug(session.Token, zap.Error(err))
+		// s.logger.Debug(session.Token, zap.Error(err))
 
 		// userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.Token)
 		// if !tokenAuth {
