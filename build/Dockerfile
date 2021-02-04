@@ -25,14 +25,14 @@ ENV GOARCH amd64
 ENV CGO_ENABLED 1
 
 RUN apt-get update && \
-    apt-get -y upgrade && \
-    apt-get install -y --no-install-recommends ca-certificates gcc libc6-dev git && \
-    git config --global advice.detachedHead false && \
-    git clone --quiet --no-checkout https://github.com/alexx855/nakama /go/build/nakama
+  apt-get -y upgrade && \
+  apt-get install -y --no-install-recommends ca-certificates gcc libc6-dev git && \
+  git config --global advice.detachedHead false && \
+  git clone --quiet --no-checkout https://github.com/alexx855/nakama /go/build/nakama
 
 WORKDIR /go/build/nakama
 RUN git checkout --quiet "$commit" && \
-    go build -o /go/build-out/nakama -trimpath -mod=vendor -gcflags "-trimpath $PWD" -asmflags "-trimpath $PWD" -ldflags "-s -w -X main.version=$version -X main.commitID=$commit"
+  go build -o /go/build-out/nakama -trimpath -mod=vendor -gcflags "-trimpath $PWD" -asmflags "-trimpath $PWD" -ldflags "-s -w -X main.version=$version -X main.commitID=$commit"
 
 FROM debian:buster-slim
 
@@ -43,11 +43,11 @@ LABEL variant=nakama
 LABEL description="Distributed server for social and realtime games and apps."
 
 RUN mkdir -p /nakama/data/modules && \
-    apt-get update && \
-    apt-get -y upgrade && \
-    apt-get install -y --no-install-recommends ca-certificates=20190110 tzdata curl iproute2 unzip rsync git tini schroot && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+  apt-get update && \
+  apt-get -y upgrade && \
+  apt-get install -y --no-install-recommends ca-certificates=20190110 tzdata curl iproute2 unzip rsync git tini schroot && \
+  apt-get clean && \
+  rm -rf /var/lib/apt/lists/*
 
 WORKDIR /nakama/
 COPY --from=builder "/go/build-out/nakama" /nakama/

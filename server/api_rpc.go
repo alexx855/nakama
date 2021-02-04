@@ -22,11 +22,13 @@ import (
 	"strings"
 	"time"
 
+	firebase "firebase.google.com/go"
 	"github.com/gofrs/uuid"
 	"github.com/gorilla/mux"
 	grpcgw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/heroiclabs/nakama-common/api"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -43,6 +45,30 @@ var (
 	requestBodyTooLargeBytes = []byte(`{"code":3, "message":"http: request body too large"}`)
 )
 
+// func NewCustomSession(customID string) (*grpc.ClientConn, apigrpc.NakamaClient, *api.Session, context.Context) {
+// 	ctx := context.Background()
+// 	outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+// 		"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
+// 	}))
+// 	conn, err := grpc.DialContext(outgoingCtx, "localhost:7349", grpc.WithInsecure())
+// 	if err != nil {
+// 		return nil, nil, nil, nil
+// 	}
+
+// 	client := apigrpc.NewNakamaClient(conn)
+// 	session, err := client.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
+// 		Account: &api.AccountCustom{
+// 			Id: customID,
+// 		},
+// 		Username: GenerateString(),
+// 	})
+// 	if err != nil {
+// 		return nil, nil, nil, nil
+// 	}
+
+// 	return conn, client, session, outgoingCtx
+// }
+
 func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 	// Check first token then HTTP key for authentication, and add user info to the context.
 	queryParams := r.URL.Query()
@@ -52,17 +78,68 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 	var vars map[string]string
 	var expiry int64
 	if auth := r.Header["Authorization"]; len(auth) >= 1 {
-		userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
-		if !tokenAuth {
-			// Auth token not valid or expired.
-			w.Header().Set("content-type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			_, err := w.Write(authTokenInvalidBytes)
-			if err != nil {
-				s.logger.Debug("Error writing response to client", zap.Error(err))
-			}
+
+		opt := option.WithCredentialsFile("/nakama/data/modules/service-account.json")
+		app, err := firebase.NewApp(context.Background(), nil, opt)
+		// app, err := firebase.NewApp(context.Background(), nil)
+
+		if err != nil {
+			s.logger.Debug("error initializing app: %v\n",  zap.Error(err))
 			return
 		}
+
+		s.logger.Debug("Firebase admin ready")
+
+		ctx := context.Background()
+		client, err := app.Auth(ctx)
+		if err != nil {
+			s.logger.Error("error getting Auth client: %v\n",  zap.Error(err))
+			return
+		}
+
+		const prefix = "Bearer "
+		var idToken = auth[len(prefix):]
+		// auth[0]
+		s.logger.Info(auth[0])
+		s.logger.Info(idToken[0])
+		firebaseIDToken, err := client.VerifyIDToken(ctx, idToken[0])
+		if err != nil {
+			s.logger.Error("error verifying ID token: %v\n",  zap.Error(err))
+			return
+		}
+
+		s.logger.Info("Verified ID token: %v\n")
+		s.logger.Info(firebaseIDToken.UID)
+
+		// TODO: get from custom login
+		// AuthenticateCustom(firebaseIDToken)
+
+
+
+		// userID, username, vars, expiry, tokenAuth =  parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
+		// if !tokenAuth {
+		// 	// Auth token not valid or expired.
+		// 	w.Header().Set("content-type", "application/json")
+		// 	w.WriteHeader(http.StatusUnauthorized)
+		// 	_, err := w.Write(authTokenInvalidBytes)
+		// 	if err != nil {
+		// 		s.logger.Debug("Error writing response to client", zap.Error(err))
+		// 	}
+		// 	return
+		// }
+
+		// userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
+		// if !tokenAuth {
+		// 	// Auth token not valid or expired.
+		// 	w.Header().Set("content-type", "application/json")
+		// 	w.WriteHeader(http.StatusUnauthorized)
+		// 	_, err := w.Write(authTokenInvalidBytes)
+		// 	if err != nil {
+		// 		s.logger.Debug("Error writing response to client", zap.Error(err))
+		// 	}
+		// 	return
+		// }
+
 	} else if httpKey := queryParams.Get("http_key"); httpKey != "" {
 		if httpKey != s.config.GetRuntime().HTTPKey {
 			// HTTP key did not match.

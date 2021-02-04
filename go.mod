@@ -3,6 +3,8 @@ module github.com/heroiclabs/nakama/v3
 go 1.13
 
 require (
+	firebase.google.com/go v3.13.0+incompatible
+	firebase.google.com/go/v4 v4.2.0 // indirect
 	github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973 // indirect
 	github.com/blevesearch/bleve v1.0.13
 	github.com/cockroachdb/apd v1.1.0 // indirect
@@ -53,6 +55,7 @@ require (
 	golang.org/x/net v0.0.0-20200925080053-05aa5d4ee321 // indirect
 	golang.org/x/sys v0.0.0-20200926100807-9d91bd62050c // indirect
 	golang.org/x/text v0.3.5 // indirect
+	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20201019141844-1ed22bb0c154
 	google.golang.org/grpc v1.33.1
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.0
