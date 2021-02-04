@@ -16,6 +16,7 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -45,7 +46,7 @@ var (
 	requestBodyTooLargeBytes = []byte(`{"code":3, "message":"http: request body too large"}`)
 )
 
-// func NewCustomSession(customID string) (*grpc.ClientConn, apigrpc.NakamaClient, *api.Session, context.Context) {
+// func NewCustomSession(customID string) (*grpc.ClientConn, apigrpc.NakamaClient, session *api.Session, context.Context) {
 // 	ctx := context.Background()
 // 	outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
 // 		"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
@@ -60,7 +61,7 @@ var (
 // 		Account: &api.AccountCustom{
 // 			Id: customID,
 // 		},
-// 		Username: GenerateString(),
+// 		// Username: GenerateString(),
 // 	})
 // 	if err != nil {
 // 		return nil, nil, nil, nil
@@ -109,16 +110,60 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 		firebaseIDToken, err := client.VerifyIDToken(ctx, idToken)
 		if err != nil {
 			s.logger.Error("error verifying ID token: %v\n", zap.Error(err))
+			// Auth token not valid or expired.
+			w.Header().Set("content-type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, err := w.Write(authTokenInvalidBytes)
+			if err != nil {
+				s.logger.Debug("Error writing response to client", zap.Error(err))
+			}
+
 			return
 		}
 
 		s.logger.Debug("Verified ID token: %v\n")
 		s.logger.Debug(firebaseIDToken.UID)
 
-		// TODO: get from custom login
-		// AuthenticateCustom(firebaseIDToken)
+		ctx = context.Background()
+		outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+			"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
+		}))
 
-		userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), auth[0])
+		session, err := s.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
+			Account: &api.AccountCustom{
+				Id: firebaseIDToken.UID,
+			},
+			// Username: GenerateString(),
+		})
+
+		// session := NewCustomSession(firebaseIDToken.UID)
+		if err != nil {
+			s.logger.Error("error verifying ID token: %v\n", zap.Error(err))
+			// Auth token not valid or expired.
+			w.Header().Set("content-type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_, err := w.Write(authTokenInvalidBytes)
+			if err != nil {
+				s.logger.Debug("Error writing response to client", zap.Error(err))
+			}
+
+			return
+		}
+
+		// client := apigrpc.NewNakamaClient(conn)
+		// session, err := client.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
+		// 	Account: &api.AccountCustom{
+		// 		Id: customID,
+		// 	},
+		// 	// Username: GenerateString(),
+		// })
+		// if err != nil {
+		// 	return nil, nil, nil, nil
+		// }
+
+		// return conn, client, session, outgoingCtx
+
+		userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.Token)
 		if !tokenAuth {
 			// Auth token not valid or expired.
 			w.Header().Set("content-type", "application/json")
