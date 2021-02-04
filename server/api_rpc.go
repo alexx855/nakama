@@ -96,7 +96,7 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		s.logger.Debug("Verified ID token: %v\n")
+		s.logger.Debug("Verified ID token:")
 		s.logger.Debug(firebaseIDToken.UID)
 		// s.logger.Debug("session.Token", zap.Error(err))
 		// s.logger.Debug(session.Token, zap.Error(err))
@@ -112,49 +112,52 @@ func (s *ApiServer) RpcFuncHttp(w http.ResponseWriter, r *http.Request) {
 		// 	Username: firebaseIDToken.UID,
 		// })
 
-		if err != nil {
-			s.logger.Error("error verifying ID token: %v\n", zap.Error(err))
-			// Auth token not valid or expired.
-			w.Header().Set("content-type", "application/json")
-			w.WriteHeader(http.StatusUnauthorized)
-			_, err := w.Write(authTokenInvalidBytes)
-			if err != nil {
-				s.logger.Debug("Error writing response to client", zap.Error(err))
-			}
+		// if err != nil {
+		// 	s.logger.Error("error verifying ID token: %v\n", zap.Error(err))
+		// 	// Auth token not valid or expired.
+		// 	w.Header().Set("content-type", "application/json")
+		// 	w.WriteHeader(http.StatusUnauthorized)
+		// 	_, err := w.Write(authTokenInvalidBytes)
+		// 	if err != nil {
+		// 		s.logger.Debug("Error writing response to client", zap.Error(err))
+		// 	}
 
-			return
-		}
+		// 	return
+		// }
 
 		// session, err := s.AuthenticateCustom(ctx, "48656C6C6F20776F726C64", "username", true)
 		// if err != nil {
 		// 	s.logger.Debug("Session error", zap.Error(err))
 		// }
 
-			outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
-				"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
-			}))
-			conn, err := grpc.DialContext(outgoingCtx, "localhost:7349", grpc.WithInsecure())
-			if err != nil {
-				s.logger.Debug("Error writing response to client", zap.Error(err))
-				return
-			}
+		outgoingCtx := metadata.NewOutgoingContext(ctx, metadata.New(map[string]string{
+			"authorization": "Basic " + base64.StdEncoding.EncodeToString([]byte("defaultkey:")),
+		}))
+		conn, err := grpc.DialContext(outgoingCtx, "localhost:7349", grpc.WithInsecure())
+		if err != nil {
+			s.logger.Debug("Error writing response to client", zap.Error(err))
+			return
+		}
 
-			apiclient := apigrpc.NewNakamaClient(conn)
-			session, err := apiclient.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
-				Account: &api.AccountCustom{
-					Id: firebaseIDToken.UID,
-				},
-				// Username: GenerateString(),
-				Username: firebaseIDToken.UID,
-			})
-			if err != nil {
-					s.logger.Debug("Error writing response to client", zap.Error(err))
-					return
-			}
+		apiclient := apigrpc.NewNakamaClient(conn)
+		session, err := apiclient.AuthenticateCustom(outgoingCtx, &api.AuthenticateCustomRequest{
+			Account: &api.AccountCustom{
+				Id: firebaseIDToken.UID,
+			},
+			// Username: GenerateString(),
+			Username: firebaseIDToken.UID,
+		})
+		if err != nil {
+			s.logger.Debug("Error writing response to client", zap.Error(err))
+			return
+		}
 
+		s.logger.Debug(session.Token)
+		s.logger.Debug(session.RefreshToken)
+		s.logger.Debug(session.GetRefreshToken())
 		// userID, username, vars, err := AuthenticateCustom(context.Background(), logger, db, uuid.Must(uuid.NewV4()).String(), uuid.Must(uuid.NewV4()).String(), true)
 		// userID, username, vars, expiry, tokenAuth = parseBearerAuth([]byte(s.config.GetSession().EncryptionKey), session.Token)
-		userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.Token)
+		userID, username, vars, expiry, tokenAuth = parseToken([]byte(s.config.GetSession().RefreshEncryptionKey), session.GetRefreshToken())
 		if !tokenAuth {
 			// Auth token not valid or expired.
 			w.Header().Set("content-type", "application/json")
