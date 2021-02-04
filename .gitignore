@@ -1,4 +1,5 @@
-nakama
+./nakama
+./nakama/
 .cookie
 
 # Created by https://www.toptal.com/developers/gitignore/api/go,angular,node,intellij+all,visualstudiocode,visualstudio,sublimetext,windows,linux,macos
